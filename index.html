@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mirador de l'Adrià - Botanical Trail Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #map { width: 100vw; height: 100vh; }
+    .map-status {
+      position: fixed;
+      z-index: 1000;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: calc(100vw - 2rem);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #fff3cd;
+      color: #664d03;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    
+    /* Flashcard Popup Styling */
+    .flashcard {
+      width: 260px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .flashcard img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 2px solid #2e7d32;
+    }
+    .flashcard-body {
+      padding: 12px;
+      background: #ffffff;
+    }
+    .flashcard-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1b5e20;
+      margin: 0 0 4px 0;
+      font-style: italic;
+    }
+    .flashcard-meta {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .flashcard-info {
+      font-size: 0.85rem;
+      color: #333;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+    .leaflet-popup-content-wrapper { padding: 0; border-radius: 8px; overflow: hidden; }
+    .leaflet-popup-content { margin: 0 !important; width: 260px !important; }
+  </style>
+</head>
+<body>
+
+<div id="map" aria-label="Botanical trail map" role="application"></div>
+
+<script>
+  function showMapStatus(message) {
+    const status = document.createElement('div');
+    status.className = 'map-status';
+    status.setAttribute('role', 'status');
+    status.textContent = message;
+    document.body.append(status);
+  }
+
+  if (!window.L) {
+    showMapStatus('The map library could not be loaded. Please check your internet connection and reload the page.');
+  } else {
+  // Initialize Map focused on El Coll / Mirador de l'Adrià
+  const map = L.map('map').setView([41.4158, 2.1498], 18);
+
+  // OpenStreetMap Tile Layer
+  const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+  }).addTo(map);
+  baseLayer.once('tileerror', () => {
+    showMapStatus('Map tiles could not be loaded. Please check your internet connection and reload the page.');
+  });
+
+  // Track coordinates extracted from GPX
+  const trackCoords = [
+    [41.415669, 2.148921], [41.415635, 2.148863], [41.415596, 2.148828], [41.415638, 2.148856],
+    [41.415596, 2.148805], [41.415550, 2.148793], [41.415578, 2.148742], [41.415617, 2.148782],
+    [41.415658, 2.148809], [41.415689, 2.148854], [41.415704, 2.148914], [41.415699, 2.148974],
+    [41.415724, 2.149034], [41.415734, 2.149095], [41.415746, 2.149154], [41.415765, 2.149217],
+    [41.415777, 2.149276], [41.415795, 2.149332], [41.415811, 2.149389], [41.415835, 2.149440],
+    [41.415785, 2.149426], [41.415830, 2.149420], [41.415808, 2.149475], [41.415847, 2.149508],
+    [41.415829, 2.149564], [41.415828, 2.149634], [41.415843, 2.149693], [41.415819, 2.149745],
+    [41.415827, 2.149807], [41.415840, 2.149870], [41.415819, 2.149928], [41.415855, 2.149970],
+    [41.415810, 2.149987], [41.415850, 2.149944], [41.415798, 2.149947], [41.415841, 2.149966],
+    [41.415837, 2.150028], [41.415816, 2.150083], [41.415796, 2.150147], [41.415824, 2.150098],
+    [41.415795, 2.150147], [41.415794, 2.150217], [41.415795, 2.150279], [41.415845, 2.150313],
+    [41.415864, 2.150369], [41.415815, 2.150370], [41.415823, 2.150434], [41.415825, 2.150497],
+    [41.415777, 2.150478], [41.415809, 2.150424], [41.415761, 2.150443], [41.415712, 2.150470],
+    [41.415698, 2.150413], [41.415745, 2.150469], [41.415765, 2.150543], [41.415752, 2.150602],
+    [41.415783, 2.150653], [41.415762, 2.150718], [41.415717, 2.150757], [41.415746, 2.150808],
+    [41.415780, 2.150764], [41.415825, 2.150757], [41.415854, 2.150705], [41.415902, 2.150722],
+    [41.415903, 2.150792], [41.415888, 2.150734], [41.415906, 2.150671], [41.415943, 2.150636],
+    [41.415950, 2.150577], [41.415957, 2.150512], [41.415980, 2.150447], [41.415994, 2.150382],
+    [41.416007, 2.150313], [41.416020, 2.150255], [41.416039, 2.150192], [41.416050, 2.150134],
+    [41.416072, 2.150076], [41.416092, 2.150021], [41.416111, 2.149963], [41.416119, 2.149902],
+    [41.416145, 2.149850], [41.416167, 2.149785], [41.416185, 2.149722], [41.416222, 2.149682],
+    [41.416191, 2.149727], [41.416206, 2.149666], [41.416170, 2.149711], [41.416136, 2.149761],
+    [41.416111, 2.149813], [41.416086, 2.149867], [41.416053, 2.149922], [41.416007, 2.149975],
+    [41.415993, 2.150037], [41.415982, 2.150099], [41.415960, 2.150157], [41.415937, 2.150209],
+    [41.415891, 2.150262], [41.415841, 2.150267], [41.415791, 2.150241], [41.415783, 2.150163],
+    [41.415807, 2.150112], [41.415850, 2.150093], [41.415850, 2.150017], [41.415853, 2.149941],
+    [41.415823, 2.149895], [41.415782, 2.149864], [41.415793, 2.149927], [41.415842, 2.149899],
+    [41.415848, 2.149965], [41.415822, 2.149913], [41.415796, 2.149861], [41.415796, 2.149801],
+    [41.415807, 2.149740], [41.415805, 2.149672], [41.415807, 2.149606], [41.415812, 2.149546]
+  ];
+
+  // Draw Trail Polyline
+  const trailPath = L.polyline(trackCoords, { color: '#2e7d32', weight: 4, opacity: 0.85 }).addTo(map);
+
+  // All 14 Waypoints with photos and mapped descriptions
+  const waypoints = [
+    {
+      name: "Plumbago auriculata",
+      lat: 41.415584, lon: 2.148802, ele: 135,
+      photo: "IMG_2928.jpeg",
+      info: "All parts contain toxic plumbagin (skin blistering). Bark powder treats fevers; roots/leaves treat open wounds."
+    },
+    {
+      name: "Diospyros kaki",
+      lat: 41.415709, lon: 2.148957, ele: 138,
+      photo: "IMG_2929.jpeg",
+      info: "Cardiovascular health support, antioxidant, anti-inflammatory, and metabolic plant."
+    },
+    {
+      name: "Robinia pseudoacacia",
+      lat: 41.415815, lon: 2.149403, ele: 145,
+      photo: "IMG_2930.jpeg",
+      info: "Flowers: antispasmodic, diuretic, laxative, sedative.\nBark/Roots: emetic.\nLeaves: choleretic effects."
+    },
+    {
+      name: "Rhododendron",
+      lat: 41.415829, lon: 2.149973, ele: 153,
+      photo: "IMG_2931.jpeg",
+      info: "Relieves pain, reduces inflammation, and treats respiratory and gastrointestinal issues."
+    },
+    {
+      name: "Pittosporum tobira",
+      lat: 41.415795, lon: 2.150148, ele: 156,
+      photo: "IMG_2932.jpeg",
+      info: "Pain relief, clearing tissue toxins, and reducing inflammation."
+    },
+    {
+      name: "Ruscus hypoglossum",
+      lat: 41.415822, lon: 2.150379, ele: 160,
+      photo: "IMG_2933.jpeg",
+      info: "Treats vascular disorders, fluid retention, skin inflammation, and throat conditions."
+    },
+    {
+      name: "Cestrum parqui",
+      lat: 41.415777, lon: 2.150479, ele: 162,
+      photo: "IMG_2934.jpeg",
+      info: "Fever and inflammation, skin ailments/wounds, pain, sleep/spasms, shamanic rituals."
+    },
+    {
+      name: "Cupressus sempervirens",
+      lat: 41.415755, lon: 2.150610, ele: 165,
+      photo: "IMG_2935.jpeg",
+      info: "Respiratory support, circulation and veins, skin care, sweating/deodorant."
+    },
+    {
+      name: "Alchornea laxiflora",
+      lat: 41.415741, lon: 2.150782, ele: 169,
+      photo: "IMG_2936.jpeg",
+      info: "Used for inflammation, infections, and malaria management."
+    },
+    {
+      name: "Erigeron canadensis",
+      lat: 41.415824, lon: 2.150762, ele: 167,
+      photo: "IMG_2937.jpeg",
+      info: "Gastrointestinal relief, wound healing/bleeding, respiratory support, urinary health."
+    },
+    {
+      name: "Olea europaea",
+      lat: 41.415811, lon: 2.150731, ele: 166,
+      photo: "IMG_2938.jpeg",
+      info: "Lowering blood pressure, fighting inflammation, blood sugar management, kidney/heart relief."
+    },
+    {
+      name: "Pistacia lentiscus",
+      lat: 41.415898, lon: 2.150770, ele: 167,
+      photo: "IMG_2940.jpeg",
+      info: "Stomach ulcers, gastritis, indigestion, dental plaque, breath, and gum health."
+    },
+    {
+      name: "Laurus nobilis",
+      lat: 41.416068, lon: 2.150141, ele: 157,
+      photo: "IMG_2941.jpeg",
+      info: "Digestive relief, pain and inflammation, respiratory support, metabolic support."
+    },
+    {
+      name: "Ceratonia siliqua",
+      lat: 41.416184, lon: 2.149731, ele: 153,
+      photo: "IMG_2942.jpeg",
+      info: "Anti-diarrhoea action, anti-reflux support, blood sugar management, cholesterol lowering."
+    }
+  ];
+
+  // Add Waypoint Markers & Flashcard Popups
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    })[character]);
+  }
+
+  waypoints.forEach(wp => {
+    const photoSrc = /^[A-Za-z0-9_.-]+\.jpeg$/i.test(wp.photo) ? encodeURI(wp.photo) : '';
+    const popupContent = `
+      <div class="flashcard">
+        <img src="${photoSrc}" alt="${escapeHtml(wp.name)}">
+        <div class="flashcard-body">
+          <h3 class="flashcard-title">${escapeHtml(wp.name)}</h3>
+          <div class="flashcard-meta">Elev: ${wp.ele}m | GPS: ${wp.lat.toFixed(4)}, ${wp.lon.toFixed(4)}</div>
+          <div class="flashcard-info">${escapeHtml(wp.info)}</div>
+        </div>
+      </div>
+    `;
+
+    L.marker([wp.lat, wp.lon], { title: wp.name })
+      .addTo(map)
+      .bindPopup(popupContent);
+  });
+  }
+</script>
+</body>
+</html>
